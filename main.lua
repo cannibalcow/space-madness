@@ -9,9 +9,11 @@ height = 1024
 score = 0
 
 monsters = {}
-monsterSpawnFrequence = 0.5
+monsterSpawnFrequence = 0.2
 monsterTimer = monsterSpawnFrequence
 state = "alive"
+deaths = 0
+sndLaser = nil
 
 function love.load()
     love.window.setFullscreen(false)
@@ -21,12 +23,15 @@ function love.load()
         y = 256,
         radius = 15
     }
+
+    -- Load sounds
+    sndLaser = love.audio.newSource("sfx/laser.wav")
 end
 
 function love.draw()
     love.graphics.print("x: " .. player.x .. " y: ".. player.y , 50, 50)
     love.graphics.print("Score: " .. score, 25, 25)    
-
+    love.graphics.print("Deaths: " .. deaths, 25, 35)
     -- Draw player
     love.graphics.setColor(255, 0, 0);
     love.graphics.circle("line", player.x, player.y, player.radius, 6)
@@ -100,14 +105,19 @@ function love.update(dt)
     -- move monster
     for i, monster in ipairs(monsters) do
         if monster.state == "alive" then
-            monster.x = monster.x + (100 * dt)
-            monster.y = monster.y + math.sin(monster.x/20) * 10;
+            if monster.direction == "fromLeft" then
+                monster.x = monster.x + (125 * dt)
+                monster.y = monster.y + math.sin(monster.x/20) * 10
+            else
+                monster.x = monster.x - (125 * dt)
+                monster.y = monster.y + math.sin(monster.x/20) * 10
+            end
         else
             monster.y = monster.y + (400 * dt)
             monster.x = monster.x + math.sin(monster.y/20) * 10;
         end
 
-        if monster.x > love.window.getHeight() or monster.y < 0 then
+        if monster.x < -10 or monster.x > love.window.getWidth() + 10 then
             print("killing monster ".. i)
             table.remove(monsters, i)
         end
@@ -121,6 +131,7 @@ function love.update(dt)
                monster.y < player.y + player.radius and
                monster.y + 15 > player.y then
                state = "dead"
+               deaths = deaths + 1
            end
        end
     end
@@ -147,6 +158,7 @@ function shoot(direction)
     table.insert(bullets, newBullet)
     canShoot = false
     canShootTimer = canShootTimerMax
+    sndLaser:play()
 end 
 
 function monsterReady(dt) 
@@ -158,15 +170,25 @@ function monsterReady(dt)
 end
 
 function spawnMonster() 
+    randDir = love.math.random(1, 2)
+    if randDir == 1 then
+        randX = 0
+        dir = "fromLeft"
+    else
+        randX = love.window.getWidth()
+        dir = "fromRight"
+    end
+
     newMonster = {
-        x = 0,
+        x = randX,
         y = love.math.random(0, love.window.getHeight()),
         r = love.math.random(0, 255),
         g = love.math.random(0, 255),
         b = love.math.random(0, 255),
         width = 15,
         height = 15,
-        state = "alive"
+        state = "alive",
+        direction = dir
     }
     table.insert(monsters, newMonster)
 end
