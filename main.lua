@@ -34,14 +34,34 @@ function love.load()
     qShip = love.graphics.newQuad(6, 6, 55, 60, ships:getWidth(), ships:getHeight())
     qEnemy = love.graphics.newQuad(130, 130, 55, 55, ships:getWidth(), ships:getHeight())
     crossHair = love.graphics.newImage("gfx/crosshair.png")
+    
+    -- Cursor
     cursor = love.mouse.newCursor("gfx/crosshair.png", 0, 0)
     love.mouse.setCursor(cursor)
+
+    -- BG music
+    bgMusic = love.audio.newSource("sfx/Azureflux_-_05_-_Expedition.mp3")
+    bgMusic:play()
 end
 
 function love.draw()
-    -- Draw background
-    love.graphics.draw(bg, 0, 0)
+ -- Draw background
 
+    if state == "paused" then
+        love.graphics.print("PAUSE!", love.window.getWidth() / 2, love.window.getHeight() / 2)
+        return
+    end
+
+    if state == "player_dead" then
+        love.graphics.print("YOU DEAD! YOU NO GOOD! YOU SCORE: " .. score , love.window.getWidth() / 2 - 100, love.window.getHeight() / 2)
+        love.graphics.print("CLICK MOUSE TO PLAY AGAIN!" , love.window.getWidth() / 2 - 100, love.window.getHeight() / 2 + 25)
+        return 
+    end
+
+       love.graphics.draw(bg, 0, 0)
+
+
+    -- Draw info
     love.graphics.print("x: " .. player.x .. " y: ".. player.y , 50, 50)
     love.graphics.print("Score: " .. score, 25, 25)    
     love.graphics.print("Deaths: " .. deaths, 25, 35)
@@ -63,13 +83,16 @@ function love.draw()
     -- Reset color
     love.graphics.setColor(255,255,255)
     love.graphics.print(state, 100, 100)        
-
 end
 
 function love.update(dt)
     -- Exit
     if love.keyboard.isDown("escape") then
         love.event.push('quit')
+    end
+
+    if state == "paused" or state == "player_dead" then
+        return
     end
 
     -- Check shoot timer
@@ -100,7 +123,6 @@ function love.update(dt)
                monster.state = "dead"
                table.remove(bullets, x)
                score = score + 1
-               state = "bang"
            end
        end
     end
@@ -121,7 +143,7 @@ function love.update(dt)
                 monster.y = monster.y + math.sin(monster.x/20) * 10
             end
         else
-            monster.y = monster.y + (400 * dt)
+            monster.y = monster.y + (800 * dt)
             monster.x = monster.x + math.sin(monster.y/20) * 10;
         end
 
@@ -138,7 +160,7 @@ function love.update(dt)
                monster.x + 55 > player.x and
                monster.y < player.y + player.radius and
                monster.y + 55 > player.y then
-               state = "dead"
+               state = "player_dead"
                deaths = deaths + 1
            end
        end
@@ -149,7 +171,24 @@ function findRotation(x1 , y1, x2, y2)
    return math.atan2(y2 - y1, x2 - x1)
 end
 
+function love.keypressed(key, isrepeat)
+    if key == "p" then
+        if state == "paused" then
+            state = "play"
+        else
+            state = "paused"
+        end
+    end
+end
+
 function love.mousepressed(x, y, button)
+    if state == "player_dead" then
+        state = "play"
+        score = 0
+        for i in pairs(monsters) do
+            monsters[i] = nil
+        end
+    end
     -- shoot
     shoot(x, y)
 end
