@@ -3,8 +3,8 @@ canShoot = true
 canShootTimerMax = 0.2
 canShootTimer = canShootTimerMax
 
-width = 1280
-height = 1024
+width = 1920
+height = 1280
 
 score = 0
 
@@ -13,41 +13,51 @@ monsterSpawnFrequence = 0.2
 monsterTimer = monsterSpawnFrequence
 state = "alive"
 deaths = 0
-sndLaser = nil
+bulletSpeed = 900
+bg = nil
 
 function love.load()
     love.window.setFullscreen(false)
-    love.mouse.setVisible(false)
+    love.mouse.setVisible(true)
     player = {
         x = 256, 
         y = 256,
-        radius = 15
+        radius = 15,
+        speed = 500,
+        angle = 0,
+        width = 55,
+        height = 60
     }
 
-    -- Load sounds
-    sndLaser = love.audio.newSource("sfx/laser.wav")
+    bg = love.graphics.newImage("gfx/bg.jpg")
+    ships = love.graphics.newImage("gfx/ships.gif")
+    qShip = love.graphics.newQuad(6, 6, 55, 60, ships:getWidth(), ships:getHeight())
+    qEnemy = love.graphics.newQuad(130, 130, 55, 55, ships:getWidth(), ships:getHeight())
+    crossHair = love.graphics.newImage("gfx/crosshair.png")
+    cursor = love.mouse.newCursor("gfx/crosshair.png", 0, 0)
+    love.mouse.setCursor(cursor)
 end
 
 function love.draw()
+    -- Draw background
+    love.graphics.draw(bg, 0, 0)
+
     love.graphics.print("x: " .. player.x .. " y: ".. player.y , 50, 50)
     love.graphics.print("Score: " .. score, 25, 25)    
     love.graphics.print("Deaths: " .. deaths, 25, 35)
+    
     -- Draw player
-    love.graphics.setColor(255, 0, 0);
-    love.graphics.circle("line", player.x, player.y, player.radius, 6)
-    love.graphics.circle("line", player.x, player.y, 2, 6)
-    love.graphics.point(player.x, player.y)
+    love.graphics.draw(ships, qShip, player.x, player.y, player.angle-55, 1, 1, 55/2, 60/2)
 
     -- Draw bullets
     for i, bullet in ipairs(bullets) do
-        love.graphics.setColor(255, 165, 0)
+        -- love.graphics.setColor(255, 165, 0)
         love.graphics.rectangle("fill", bullet.x, bullet.y, 5, 5)
     end
 
     -- Draw monster
     for i, monster in ipairs(monsters) do
-        love.graphics.setColor(monster.r, monster.g, monster.b)
-        love.graphics.rectangle("line", monster.x, monster.y, monster.width, monster.height)
+        love.graphics.draw(ships, qEnemy, monster.x, monster.y)
     end            
 
     -- Reset color
@@ -68,20 +78,18 @@ function love.update(dt)
         canShoot = true
     end
 
-    -- Move bullets
-    for i, bullet in ipairs(bullets) do
-        if bullet.direction == "l" then
-            bullet.x = bullet.x - (250 * dt)
-        else
-            bullet.x = bullet.x + (250 * dt)
-        end
+    -- rotate and move player
+    player.angle = findRotation(player.x, player.y, love.mouse.getX(), love.mouse.getY())
+    player.x = player.x + (math.cos(player.angle) * player.speed) * dt
+    player.y = player.y + (math.sin(player.angle) * player.speed) * dt  
 
-        if bullet.x > width or bullet.x < 0 then
-            table.remove(bullets, i)
-        end
+    -- Move bullets
+    for i,bullet in ipairs(bullets) do
+        bullet.x = bullet.x + (bullet.dx * dt)
+        bullet.y = bullet.y + (bullet.dy * dt)
     end
 
-    -- Bullet collision
+    -- Bullet collision TODO
     for x, bullet in ipairs(bullets) do
         for i, monster in ipairs(monsters) do
             if bullet.x < monster.x + monster.width and 
@@ -127,9 +135,9 @@ function love.update(dt)
     for i, monster in ipairs(monsters) do
         if monster.state == "alive" then
             if monster.x < player.x + player.radius and 
-               monster.x + 15 > player.x and
+               monster.x + 55 > player.x and
                monster.y < player.y + player.radius and
-               monster.y + 15 > player.y then
+               monster.y + 55 > player.y then
                state = "dead"
                deaths = deaths + 1
            end
@@ -137,29 +145,37 @@ function love.update(dt)
     end
 end
 
-function love.mousemoved(x, y, dx, dy)
-    player.y = y
-    player.x = x
+function findRotation(x1 , y1, x2, y2)
+   return math.atan2(y2 - y1, x2 - x1)
 end
 
 function love.mousepressed(x, y, button)
-    state = "alive"
-    shoot(button)
+    -- shoot
+    shoot(x, y)
 end
 
-function shoot(direction) 
-    newBullet = { 
-        x = player.x, 
-        y = player.y - 1, 
-        direction = direction,
+function shoot(x, y) 
+    local startX = player.x + player.width / 2
+    local startY = player.y + player.height / 2
+    local mouseX = x
+    local mouseY = y
+    
+    local angle = math.atan2((mouseY - startY), (mouseX - startX))
+    
+    local bulletDx = bulletSpeed * math.cos(angle)
+    local bulletDy = bulletSpeed * math.sin(angle)
+    
+    table.insert(bullets, {
+        x = startX, 
+        y = startY, 
+        dx = bulletDx, 
+        dy = bulletDy,
         width = 5,
         height = 5
-    }
-    table.insert(bullets, newBullet)
+    })
     canShoot = false
     canShootTimer = canShootTimerMax
-    sndLaser:play()
-end 
+end
 
 function monsterReady(dt) 
     monsterTimer = monsterTimer - ( 1 * dt) 
@@ -185,8 +201,8 @@ function spawnMonster()
         r = love.math.random(0, 255),
         g = love.math.random(0, 255),
         b = love.math.random(0, 255),
-        width = 15,
-        height = 15,
+        width = 55,
+        height = 55,
         state = "alive",
         direction = dir
     }
