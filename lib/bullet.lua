@@ -1,6 +1,6 @@
 local Bullet = class('Bullet')
 
-function Bullet:initialize(self, startX, startY, mouseX, mouseY)
+function Bullet:initialize(startX, startY, mouseX, mouseY)
   self.x = startX 
   self.y = startY
   self.width = 5
