@@ -1,37 +1,36 @@
+class = require 'lib.middleclass'
+Tools = require("lib.tools")
+Bullet = require("lib.bullet")
+local Player = require("lib.player")
+local Monster = require("lib.monster")
+
 bullets = {}
-canShoot = true
-canShootTimerMax = 0.2
-canShootTimer = canShootTimerMax
+monsters = {}
 
 width = 1920
 height = 1280
 
-score = 0
+gameScore = 0
+deaths = 0
 
-monsters = {}
+
 monsterSpawnFrequence = 0.2
 monsterTimer = monsterSpawnFrequence
+
 state = "alive"
-deaths = 0
 bulletSpeed = 900
 bg = nil
+
+player = nil
 
 function love.load()
     love.window.setFullscreen(false)
     love.mouse.setVisible(true)
-    player = {
-        x = 256, 
-        y = 256,
-        radius = 15,
-        speed = 500,
-        angle = 0,
-        width = 55,
-        height = 60
-    }
+
+    player = Player:new()
 
     bg = love.graphics.newImage("gfx/bg.jpg")
     ships = love.graphics.newImage("gfx/ships.gif")
-    qShip = love.graphics.newQuad(6, 6, 55, 60, ships:getWidth(), ships:getHeight())
     qEnemy = love.graphics.newQuad(130, 130, 55, 55, ships:getWidth(), ships:getHeight())
     crossHair = love.graphics.newImage("gfx/crosshair.png")
     
@@ -40,8 +39,8 @@ function love.load()
     love.mouse.setCursor(cursor)
 
     -- BG music
-    bgMusic = love.audio.newSource("sfx/Azureflux_-_05_-_Expedition.mp3")
-    bgMusic:play()
+    -- bgMusic = love.audio.newSource("sfx/Azureflux_-_05_-_Expedition.mp3")
+    -- bgMusic:play()
 end
 
 function love.draw()
@@ -53,36 +52,32 @@ function love.draw()
     end
 
     if state == "player_dead" then
-        love.graphics.print("YOU DEAD! YOU NO GOOD! YOU SCORE: " .. score , love.window.getWidth() / 2 - 100, love.window.getHeight() / 2)
+        love.graphics.print("YOU DEAD! YOU NO GOOD! YOU SCORE: " .. gameScore , love.window.getWidth() / 2 - 100, love.window.getHeight() / 2)
         love.graphics.print("CLICK MOUSE TO PLAY AGAIN!" , love.window.getWidth() / 2 - 100, love.window.getHeight() / 2 + 25)
         return 
     end
 
-       love.graphics.draw(bg, 0, 0)
-
+    love.graphics.draw(bg, 0, 0)
 
     -- Draw info
-    love.graphics.print("x: " .. player.x .. " y: ".. player.y , 50, 50)
-    love.graphics.print("Score: " .. score, 25, 25)    
+    love.graphics.print("Score: " .. gameScore, 25, 25)    
     love.graphics.print("Deaths: " .. deaths, 25, 35)
     
     -- Draw player
-    love.graphics.draw(ships, qShip, player.x, player.y, player.angle-55, 1, 1, 55/2, 60/2)
+    player:draw()
 
     -- Draw bullets
-    for i, bullet in ipairs(bullets) do
-        -- love.graphics.setColor(255, 165, 0)
-        love.graphics.rectangle("fill", bullet.x, bullet.y, 5, 5)
+    for i,bullet in ipairs(bullets) do
+        bullet:draw()
     end
 
     -- Draw monster
     for i, monster in ipairs(monsters) do
-        love.graphics.draw(ships, qEnemy, monster.x, monster.y)
+        monster:draw()
     end            
 
     -- Reset color
     love.graphics.setColor(255,255,255)
-    love.graphics.print(state, 100, 100)        
 end
 
 function love.update(dt)
@@ -95,36 +90,28 @@ function love.update(dt)
         return
     end
 
-    -- Check shoot timer
-    canShootTimer = canShootTimer - ( 1 * dt)
-    if canShootTimer < 0 then
-        canShoot = true
+    -- Update player
+    player:update(dt)
+
+    -- Update bullets
+    if table.maxn(bullets) > 0 then
+        for i, bullet in ipairs(bullets) do
+            bullet:update(dt)
+        end
     end
 
-    -- rotate and move player
-    player.angle = findRotation(player.x, player.y, love.mouse.getX(), love.mouse.getY())
-    player.x = player.x + (math.cos(player.angle) * player.speed) * dt
-    player.y = player.y + (math.sin(player.angle) * player.speed) * dt  
+    -- Bullet collision
+    if table.maxn(bullets) > 0 then
+        for i, bullet in ipairs(bullets) do
+            for x, monster in ipairs(monsters) do
+                if bullet:isMonsterCollition(monster) then
+                    score(1)
+                    monster:setDead()
 
-    -- Move bullets
-    for i,bullet in ipairs(bullets) do
-        bullet.x = bullet.x + (bullet.dx * dt)
-        bullet.y = bullet.y + (bullet.dy * dt)
-    end
-
-    -- Bullet collision TODO
-    for x, bullet in ipairs(bullets) do
-        for i, monster in ipairs(monsters) do
-            if bullet.x < monster.x + monster.width and 
-               bullet.x + bullet.width > monster.x and
-               bullet.y < monster.y + monster.height and
-               bullet.y + bullet.height > monster.y then
-               
-               monster.state = "dead"
-               table.remove(bullets, x)
-               score = score + 1
-           end
-       end
+                    table.remove(bullets, i)
+                end
+            end
+        end
     end
 
     -- spawn monster
@@ -134,42 +121,23 @@ function love.update(dt)
 
     -- move monster
     for i, monster in ipairs(monsters) do
-        if monster.state == "alive" then
-            if monster.direction == "fromLeft" then
-                monster.x = monster.x + (125 * dt)
-                monster.y = monster.y + math.sin(monster.x/20) * 10
-            else
-                monster.x = monster.x - (125 * dt)
-                monster.y = monster.y + math.sin(monster.x/20) * 10
-            end
-        else
-            monster.y = monster.y + (800 * dt)
-            monster.x = monster.x + math.sin(monster.y/20) * 10;
-        end
+        monster:update(dt)
 
-        if monster.x < -10 or monster.x > love.window.getWidth() + 10 then
-            print("killing monster ".. i)
+        if monster:isOutOfBounds() then
             table.remove(monsters, i)
         end
     end
 
     -- player monster collision detection
-    for i, monster in ipairs(monsters) do
-        if monster.state == "alive" then
-            if monster.x < player.x + player.radius and 
-               monster.x + 55 > player.x and
-               monster.y < player.y + player.radius and
-               monster.y + 55 > player.y then
-               state = "player_dead"
-               deaths = deaths + 1
-           end
-       end
+    if table.maxn(monsters) > 0 then
+        for i, monster in ipairs(monsters) do
+            if monster:isPlayerCollision(player) then
+                state = "player_dead"
+            end
+        end
     end
 end
 
-function findRotation(x1 , y1, x2, y2)
-   return math.atan2(y2 - y1, x2 - x1)
-end
 
 function love.keypressed(key, isrepeat)
     if key == "p" then
@@ -183,37 +151,16 @@ end
 
 function love.mousepressed(x, y, button)
     if state == "player_dead" then
-        state = "play"
-        score = 0
-        for i in pairs(monsters) do
-            monsters[i] = nil
-        end
+       resetGame()
     end
-    -- shoot
-    shoot(x, y)
-end
 
-function shoot(x, y) 
-    local startX = player.x + player.width / 2
-    local startY = player.y + player.height / 2
-    local mouseX = x
-    local mouseY = y
-    
-    local angle = math.atan2((mouseY - startY), (mouseX - startX))
-    
-    local bulletDx = bulletSpeed * math.cos(angle)
-    local bulletDy = bulletSpeed * math.sin(angle)
-    
-    table.insert(bullets, {
-        x = startX, 
-        y = startY, 
-        dx = bulletDx, 
-        dy = bulletDy,
-        width = 5,
-        height = 5
-    })
-    canShoot = false
-    canShootTimer = canShootTimerMax
+    -- shoot
+    pos = table.maxn(bullets)
+    local bullet = player:shoot(love.mouse.getX(), love.mouse.getY())
+
+    if bullet ~= nil then
+        table.insert(bullets, pos+1, bullet)
+    end
 end
 
 function monsterReady(dt) 
@@ -225,25 +172,22 @@ function monsterReady(dt)
 end
 
 function spawnMonster() 
-    randDir = love.math.random(1, 2)
-    if randDir == 1 then
-        randX = 0
-        dir = "fromLeft"
-    else
-        randX = love.window.getWidth()
-        dir = "fromRight"
+    table.insert(monsters, Monster:new())
+end
+
+function resetGame()
+    state = "play"
+    gameScore = 0
+
+    for i in pairs(monsters) do
+        monsters[i] = nil
     end
 
-    newMonster = {
-        x = randX,
-        y = love.math.random(0, love.window.getHeight()),
-        r = love.math.random(0, 255),
-        g = love.math.random(0, 255),
-        b = love.math.random(0, 255),
-        width = 55,
-        height = 55,
-        state = "alive",
-        direction = dir
-    }
-    table.insert(monsters, newMonster)
+    for i,bullet in ipairs(bullets) do
+        bullets[i] = nil
+    end
+end
+
+function score(points)
+    gameScore = gameScore + points
 end
