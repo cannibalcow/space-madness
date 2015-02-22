@@ -57,8 +57,7 @@ function love.draw()
         return 
     end
 
-   love.graphics.draw(bg, 0, 0)
-
+    love.graphics.draw(bg, 0, 0)
 
     -- Draw info
     love.graphics.print("Score: " .. score, 25, 25)    
@@ -67,14 +66,15 @@ function love.draw()
     -- Draw player
     player:draw()
 
-    -- 
+    -- Draw bullets
     for i,bullet in ipairs(bullets) do
         bullet:draw()
     end
 
     -- Draw monster
     for i, monster in ipairs(monsters) do
-        love.graphics.draw(ships, qEnemy, monster.x, monster.y)
+        monser:draw()
+        
     end            
 
     -- Reset color
@@ -96,8 +96,10 @@ function love.update(dt)
     player:update(dt)
 
     -- Update bullets
-    for i, bullet in ipairs(bullets) do
-        bullet:update(dt)
+    if table.maxn(bullets) > 0 then
+        for i, bullet in ipairs(bullets) do
+            bullet:update(dt)
+        end
     end
 
     -- Bullet collision TODO
@@ -122,23 +124,7 @@ function love.update(dt)
 
     -- move monster
     for i, monster in ipairs(monsters) do
-        if monster.state == "alive" then
-            if monster.direction == "fromLeft" then
-                monster.x = monster.x + (125 * dt)
-                monster.y = monster.y + math.sin(monster.x/20) * 10
-            else
-                monster.x = monster.x - (125 * dt)
-                monster.y = monster.y + math.sin(monster.x/20) * 10
-            end
-        else
-            monster.y = monster.y + (800 * dt)
-            monster.x = monster.x + math.sin(monster.y/20) * 10;
-        end
-
-        if monster.x < -10 or monster.x > love.window.getWidth() + 10 then
-            print("killing monster ".. i)
-            table.remove(monsters, i)
-        end
+        monster.update()
     end
 
     -- player monster collision detection
@@ -176,7 +162,11 @@ function love.mousepressed(x, y, button)
     end
 
     -- shoot
-    table.insert(bullets, player:shoot(love.mouse.getX(), love.mouse.getY()))
+    pos = table.maxn(bullets)
+    local bullet = player:shoot(love.mouse.getX(), love.mouse.getY())
+    if bullet ~= nil then
+        table.insert(bullets, pos+1, bullet)
+    end
 end
 
 function monsterReady(dt) 
@@ -188,25 +178,25 @@ function monsterReady(dt)
 end
 
 function spawnMonster() 
-    randDir = love.math.random(1, 2)
-    if randDir == 1 then
-        randX = 0
-        dir = "fromLeft"
-    else
-        randX = love.window.getWidth()
-        dir = "fromRight"
-    end
+    -- randDir = love.math.random(1, 2)
+    -- if randDir == 1 then
+    --     randX = 0
+    --     dir = "fromLeft"
+    -- else
+    --     randX = love.window.getWidth()
+    --     dir = "fromRight"
+    -- end
 
-    newMonster = {
-        x = randX,
-        y = love.math.random(0, love.window.getHeight()),
-        r = love.math.random(0, 255),
-        g = love.math.random(0, 255),
-        b = love.math.random(0, 255),
-        width = 55,
-        height = 55,
-        state = "alive",
-        direction = dir
-    }
-    table.insert(monsters, newMonster)
+    -- newMonster = {
+    --     x = randX,
+    --     y = love.math.random(0, love.window.getHeight()),
+    --     r = love.math.random(0, 255),
+    --     g = love.math.random(0, 255),
+    --     b = love.math.random(0, 255),
+    --     width = 55,
+    --     height = 55,
+    --     state = "alive",
+    --     direction = dir
+    -- }
+    table.insert(monsters, Monster:new())
 end

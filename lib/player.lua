@@ -33,7 +33,7 @@ end
 
 function Player:shoot(mouseX, mouseY)
     if self.canShoot == false then
-        return
+        return nil
     end
 
     self.canShoot = false
