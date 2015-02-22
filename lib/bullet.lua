@@ -5,10 +5,10 @@ function Bullet:initialize(startX, startY, mouseX, mouseY)
   self.y = startY
   self.width = 5
   self.height = 5
-  self.speed = 100
+  self.speed = 666
   local angle = math.atan2((mouseY - startY), (mouseX - startX))
-  self.dx = 100 * math.cos(angle)
-  self.dy = 100 * math.sin(angle)
+  self.dx = self.speed * math.cos(angle)
+  self.dy = self.speed * math.sin(angle)
 end
 
 function Bullet:printXY()  
