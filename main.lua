@@ -1,23 +1,23 @@
+class = require 'lib.middleclass'
 Tools = require("lib.tools")
-Player = require("lib.player")
-Monster = require("lib.monster")
 Bullet = require("lib.bullet")
+local Player = require("lib.player")
+local Monster = require("lib.monster")
 
 bullets = {}
-canShoot = true
--- canShootTimerMax = 0.2
--- canShootTimer = canShootTimerMax
+monsters = {}
 
 width = 1920
 height = 1280
 
 score = 0
+deaths = 0
 
-monsters = {}
+
 monsterSpawnFrequence = 0.2
 monsterTimer = monsterSpawnFrequence
+
 state = "alive"
-deaths = 0
 bulletSpeed = 900
 bg = nil
 
@@ -27,7 +27,7 @@ function love.load()
     love.window.setFullscreen(false)
     love.mouse.setVisible(true)
 
-    player = Player.new()
+    player = Player:new()
 
     bg = love.graphics.newImage("gfx/bg.jpg")
     ships = love.graphics.newImage("gfx/ships.gif")
@@ -57,7 +57,7 @@ function love.draw()
         return 
     end
 
-       love.graphics.draw(bg, 0, 0)
+   love.graphics.draw(bg, 0, 0)
 
 
     -- Draw info
@@ -66,6 +66,11 @@ function love.draw()
     
     -- Draw player
     player:draw()
+
+    -- 
+    for i,bullet in ipairs(bullets) do
+        bullet:draw()
+    end
 
     -- Draw monster
     for i, monster in ipairs(monsters) do
@@ -87,20 +92,12 @@ function love.update(dt)
         return
     end
 
-    -- Check shoot timer
-    -- canShootTimer = canShootTimer - ( 1 * dt)
-    -- if canShootTimer < 0 then
-        -- canShoot = true
-    -- end
-
-    -- rotate and move player
+    -- Update player
     player:update(dt)
 
-    -- Update bullet
-    print(table.maxn(bullets))
-
-    for i,v in ipairs(bullets) do
-        print(i,v:getX())
+    -- Update bullets
+    for i, bullet in ipairs(bullets) do
+        bullet:update(dt)
     end
 
     -- Bullet collision TODO
