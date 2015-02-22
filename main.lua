@@ -60,6 +60,7 @@ function love.draw()
     love.graphics.draw(bg, 0, 0)
 
     -- Draw info
+     love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
     love.graphics.print("Score: " .. gameScore, 25, 25)    
     love.graphics.print("Deaths: " .. deaths, 25, 35)
     
