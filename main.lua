@@ -10,7 +10,7 @@ monsters = {}
 width = 1920
 height = 1280
 
-score = 0
+gameScore = 0
 deaths = 0
 
 
@@ -52,7 +52,7 @@ function love.draw()
     end
 
     if state == "player_dead" then
-        love.graphics.print("YOU DEAD! YOU NO GOOD! YOU SCORE: " .. score , love.window.getWidth() / 2 - 100, love.window.getHeight() / 2)
+        love.graphics.print("YOU DEAD! YOU NO GOOD! YOU SCORE: " .. gameScore , love.window.getWidth() / 2 - 100, love.window.getHeight() / 2)
         love.graphics.print("CLICK MOUSE TO PLAY AGAIN!" , love.window.getWidth() / 2 - 100, love.window.getHeight() / 2 + 25)
         return 
     end
@@ -60,7 +60,7 @@ function love.draw()
     love.graphics.draw(bg, 0, 0)
 
     -- Draw info
-    love.graphics.print("Score: " .. score, 25, 25)    
+    love.graphics.print("Score: " .. gameScore, 25, 25)    
     love.graphics.print("Deaths: " .. deaths, 25, 35)
     
     -- Draw player
@@ -73,13 +73,11 @@ function love.draw()
 
     -- Draw monster
     for i, monster in ipairs(monsters) do
-        monser:draw()
-        
+        monster:draw()
     end            
 
     -- Reset color
     love.graphics.setColor(255,255,255)
-    love.graphics.print(state, 100, 100)        
 end
 
 function love.update(dt)
@@ -102,20 +100,19 @@ function love.update(dt)
         end
     end
 
-    -- Bullet collision TODO
-    -- for x, bullet in ipairs(bullets) do
-    --     for i, monster in ipairs(monsters) do
-    --         if bullet.x < monster.x + monster.width and 
-    --            bullet.x + bullet.width > monster.x and
-    --            bullet.y < monster.y + monster.height and
-    --            bullet.y + bullet.height > monster.y then
-               
-    --            monster.state = "dead"
-    --            table.remove(bullets, x)
-    --            score = score + 1
-    --        end
-    --    end
-    -- end
+    -- Bullet collision
+    if table.maxn(bullets) > 0 then
+        for i, bullet in ipairs(bullets) do
+            for x, monster in ipairs(monsters) do
+                if bullet:isMonsterCollition(monster) then
+                    score(1)
+                    monster:setDead()
+
+                    table.remove(bullets, i)
+                end
+            end
+        end
+    end
 
     -- spawn monster
     if monsterReady(dt) then
@@ -124,21 +121,21 @@ function love.update(dt)
 
     -- move monster
     for i, monster in ipairs(monsters) do
-        monster.update()
+        monster:update(dt)
+
+        if monster:isOutOfBounds() then
+            table.remove(monsters, i)
+        end
     end
 
     -- player monster collision detection
-    -- for i, monster in ipairs(monsters) do
-    --     if monster.state == "alive" then
-    --         if monster.x < player.x + player.radius and 
-    --            monster.x + 55 > player.x and
-    --            monster.y < player.y + player.radius and
-    --            monster.y + 55 > player.y then
-    --            state = "player_dead"
-    --            deaths = deaths + 1
-    --        end
-    --    end
-    -- end
+    if table.maxn(monsters) > 0 then
+        for i, monster in ipairs(monsters) do
+            if monster:isPlayerCollision(player) then
+                state = "player_dead"
+            end
+        end
+    end
 end
 
 
@@ -154,16 +151,13 @@ end
 
 function love.mousepressed(x, y, button)
     if state == "player_dead" then
-        state = "play"
-        score = 0
-        for i in pairs(monsters) do
-            monsters[i] = nil
-        end
+       resetGame()
     end
 
     -- shoot
     pos = table.maxn(bullets)
     local bullet = player:shoot(love.mouse.getX(), love.mouse.getY())
+
     if bullet ~= nil then
         table.insert(bullets, pos+1, bullet)
     end
@@ -178,25 +172,22 @@ function monsterReady(dt)
 end
 
 function spawnMonster() 
-    -- randDir = love.math.random(1, 2)
-    -- if randDir == 1 then
-    --     randX = 0
-    --     dir = "fromLeft"
-    -- else
-    --     randX = love.window.getWidth()
-    --     dir = "fromRight"
-    -- end
-
-    -- newMonster = {
-    --     x = randX,
-    --     y = love.math.random(0, love.window.getHeight()),
-    --     r = love.math.random(0, 255),
-    --     g = love.math.random(0, 255),
-    --     b = love.math.random(0, 255),
-    --     width = 55,
-    --     height = 55,
-    --     state = "alive",
-    --     direction = dir
-    -- }
     table.insert(monsters, Monster:new())
+end
+
+function resetGame()
+    state = "play"
+    gameScore = 0
+
+    for i in pairs(monsters) do
+        monsters[i] = nil
+    end
+
+    for i,bullet in ipairs(bullets) do
+        bullets[i] = nil
+    end
+end
+
+function score(points)
+    gameScore = gameScore + points
 end

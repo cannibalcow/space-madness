@@ -22,10 +22,14 @@ function Bullet:update(dt)
 end
 
 function Bullet:isMonsterCollition(monster)
-  if bullet.x < monster.x + monster.width and 
-     bullet.x + bullet.width > monster.x and
-     bullet.y < monster.y + monster.height and
-     bullet.y + bullet.height > monster.y then
+  if monster.state ~= "alive" then
+    return false
+  end
+  
+  if self.x < monster.x + monster.width and 
+     self.x + self.width > monster.x and
+     self.y < monster.y + monster.height and
+     self.y + self.height > monster.y then
      return true
    else
        return false

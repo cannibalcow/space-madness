@@ -43,7 +43,6 @@ function Player:shoot(mouseX, mouseY)
     return newBullet
 end
 
-
 function Player:getX()
     return self.x
 end
