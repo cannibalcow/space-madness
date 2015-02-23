@@ -11,6 +11,7 @@ width = 1920
 height = 1280
 
 gameScore = 0
+highScore = 0
 deaths = 0
 
 
@@ -60,10 +61,11 @@ function love.draw()
     love.graphics.draw(bg, 0, 0)
 
     -- Draw info
-     love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
+    love.graphics.print("Current FPS: "..tostring(love.timer.getFPS( )), 10, 10)
     love.graphics.print("Score: " .. gameScore, 25, 25)    
     love.graphics.print("Deaths: " .. deaths, 25, 35)
-    
+    love.graphics.print("Highscore: " .. highScore, 25, 45)
+
     -- Draw player
     player:draw()
 
@@ -98,6 +100,10 @@ function love.update(dt)
     if table.maxn(bullets) > 0 then
         for i, bullet in ipairs(bullets) do
             bullet:update(dt)
+
+            if bullet:isOutOfBounds() then
+                table.remove(bullets, i)
+            end
         end
     end
 
@@ -152,7 +158,8 @@ end
 
 function love.mousepressed(x, y, button)
     if state == "player_dead" then
-       resetGame()
+        registerHighScore()
+        resetGame()
     end
 
     -- shoot
@@ -191,4 +198,10 @@ end
 
 function score(points)
     gameScore = gameScore + points
+end
+
+function registerHighScore()
+    if gameScore > highScore then
+        highScore = gameScore
+    end
 end

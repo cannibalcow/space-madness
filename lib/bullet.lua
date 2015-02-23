@@ -36,6 +36,17 @@ function Bullet:isMonsterCollition(monster)
    end
 end 
 
+function Bullet:isOutOfBounds()
+    local h = love.window.getHeight()
+    local w = love.window.getWidth()
+
+    if self.x < -1 or self.x > w + 1 or self.y < -1 or self.y > h then
+      return true
+    else
+      return false
+    end
+end
+
 function Bullet:draw()
   love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
 end

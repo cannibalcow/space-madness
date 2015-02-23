@@ -5,5 +5,5 @@ function love.conf(t)
 	t.window.height = 1024
 	t.fullscreen = true
 	-- For Windows debugging
-	t.console = true
+	t.console = false
 end
