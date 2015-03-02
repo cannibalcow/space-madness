@@ -1,10 +1,10 @@
 class = require 'lib.middleclass'
 Tools = require("lib.tools")
 Bullet = require("lib.bullet")
+PowerUpEntity = require("lib.powerupentity")
 PowerUp = require("lib.powerup")
 local Player = require("lib.player")
 local Monster = require("lib.monster")
-
 
 bullets = {}
 monsters = {}
@@ -16,14 +16,13 @@ gameScore = 0
 highScore = 0
 deaths = 0
 
-
 monsterSpawnFrequence = 0.2
 monsterTimer = monsterSpawnFrequence
 
 -- Powerups spawn timer
-powerUpSpawnFrequence = 7
+powerUpSpawnFrequence = 1
 powerUpTimer = powerUpSpawnFrequence
-powerup = nil
+powerUpEntity = nil
 
 state = "alive"
 bg = nil
@@ -31,7 +30,7 @@ bg = nil
 player = nil
 
 function love.load()
-    love.window.setFullscreen(false)
+    love.window.setFullscreen(true)
     love.mouse.setVisible(true)
     player = Player:new()
 
@@ -44,10 +43,9 @@ function love.load()
     cursor = love.mouse.newCursor("gfx/crosshair.png", 0, 0)
     love.mouse.setCursor(cursor)
 
-
     -- BG music
-    -- bgMusic = love.audio.newSource("sfx/Azureflux_-_05_-_Expedition.mp3")
-    -- bgMusic:play()
+    bgMusic = love.audio.newSource("sfx/Azureflux_-_05_-_Expedition.mp3")
+    bgMusic:play()
 end
 
 function love.draw()
@@ -71,7 +69,7 @@ function love.draw()
     love.graphics.print("Score: " .. gameScore, 25, 25)    
     love.graphics.print("Deaths: " .. deaths, 25, 35)
     love.graphics.print("Highscore: " .. highScore, 25, 45)
-
+    love.graphics.print("PowerupLevel: " .. player:getPowerUpLevel(), 25,55)
     -- Draw player
     player:draw()
 
@@ -85,9 +83,9 @@ function love.draw()
         monster:draw()
     end            
 
-    -- Draw powerup
-    if powerup ~= nil then
-        powerup:draw()
+    -- Draw powerUpEntity
+    if powerUpEntity ~= nil then
+        powerUpEntity:draw()
     end
 
     -- Reset color
@@ -147,21 +145,21 @@ function love.update(dt)
     end
 
     if powerUpReady(dt) then
-        spawnPowerUp()
+       spawnPowerUp()
     end
 
-    if powerup ~= nil then
-        powerup:update(dt)
-        if powerup:isOutOfBounds() then
-            powerup = nil
+    if powerUpEntity ~= nil then
+        powerUpEntity:update(dt)
+        if powerUpEntity:isOutOfBounds() then
+            powerUpEntity = nil
         end
     end
 
     -- Player powerup collision detection
-    if powerup ~= nil then
-        if powerup:isPlayerCollision(player) then
-            player:setPowerUp(powerup)
-            powerup = nil
+    if powerUpEntity ~= nil then
+        if powerUpEntity:isPlayerCollision(player) then
+            powerUpEntity = nil
+            player:increasePowerUp()
         end
     end
 
@@ -228,8 +226,8 @@ end
 function spawnPowerUp()
     local y = love.math.random(0, love.window.getHeight())
     local x = 0
-    if powerup == nil and player:hasPowerUp() == false then
-        powerup = PowerUp:new()
+    if powerUpEntity == nil then
+        powerUpEntity = PowerUpEntity:new()
     end
 end 
 
@@ -246,7 +244,8 @@ function resetGame()
     end
 
     powerup = nil
-    player:removePowerUp()
+
+    player:setPowerUpLevel(0)
 end
 
 function score(points)

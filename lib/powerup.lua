@@ -2,48 +2,71 @@
 local PowerUp = class('PowerUp')
 
 function PowerUp:initialize()
-	x = -10
-	y = love.math.random(0, love.window.getHeight())
-	speed = 100
-	sprite = love.graphics.newImage("gfx/powerup.png")
-end
-
-function PowerUp:update(dt)
- 	x = x + (speed * dt)
-    y = y + math.sin(x/19) * 5
-end
-
-function PowerUp:draw()
-	love.graphics.draw(sprite, x, y)
+	level = 0
 end
 
 function PowerUp:shoot(px, py, mouseX, mouseY)
-	local newBullets = 
-	{
+	if level == 0 then
+	    return singleShot(px, py, mouseX, mouseY)
+    elseif level == 1 then
+		return dualShot(px, py, mouseX, mouseY)
+	elseif level == 2 then
+		return tripleShot(px, py, mouseX, mouseY)
+	elseif level == 3 then
+		return sixShot(px, py, mouseX, mouseY)
+	end
+end
+
+function singleShot(px, py, mouseX, mouseY)
+    local newBullet = {
+    	Bullet:new(px, py, mouseX, mouseY)
+	} 
+   	return newBullet
+end
+
+function dualShot(px, py, mouseX, mouseY)
+	local newBullets = {
 		Bullet:new(px, py, mouseX, mouseY),
 		Bullet:new(px, py, mouseX+10, mouseY+10)
    		
    	}
-    return newBullets
+   	return newBullets
 end
 
-function PowerUp:isPlayerCollision(player) 
-	if x < player.x + player.width and 
-           x + player.height > player.x and
-	       y < player.y + player.width and
-           y + player.height > player.y then
-   		return true
-   	else
-   		return false
-   	end
+function tripleShot(px, py, mouseX, mouseY)
+	local newBullets = {
+		Bullet:new(px, py, mouseX, mouseY),
+		Bullet:new(px, py, mouseX+10, mouseY+10),
+		Bullet:new(px, py, mouseX+20, mouseY+20)
+	}
+	return newBullets
 end
 
-function PowerUp:isOutOfBounds()
- 	if x < -10 or x > love.window.getWidth() + 10 then
-	 	return true
-	 else
-	    return false
+function sixShot(px, py, mouseX, mouseY)
+	local newBullets = {
+		Bullet:new(px, py, mouseX, mouseY),
+		Bullet:new(px, py, mouseX+10, mouseY+10),
+		Bullet:new(px, py, mouseX+20, mouseY+20),
+		Bullet:new(px, py, mouseX+30, mouseY+30),
+		Bullet:new(px, py, mouseX+40, mouseY+40),
+		Bullet:new(px, py, mouseX+50, mouseY+50)
+	}
+	return newBullets
+end
+
+function PowerUp:increaseLevel()
+	if level >= 3 then
+		return
 	end
+	level = level + 1
+end
+
+function PowerUp:getPowerUpLevel()
+	return level
+end
+
+function PowerUp:setLevel(lvl)
+	level = lvl
 end
 
 return PowerUp
