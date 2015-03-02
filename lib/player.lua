@@ -13,6 +13,7 @@ function Player:initialize()
     self.canShoot = true
     self.ships = love.graphics.newImage("gfx/ships.gif")
     self.qShip = love.graphics.newQuad(6, 6, 55, 60, self.ships:getWidth(), self.ships:getHeight())
+    self.powerUp = PowerUp:new(0)
 end
 
 function Player:update(dt)
@@ -39,8 +40,7 @@ function Player:shoot(mouseX, mouseY)
     self.canShoot = false
     self.canShootTimer = self.canShootTimerMax
 
-    local newBullet = Bullet:new(self.x, self.y, mouseX, mouseY)
-    return newBullet
+    return self.powerUp:shoot(self.x, self.y, mouseX, mouseY)
 end
 
 function Player:getX()
@@ -53,6 +53,18 @@ end
 
 function Player:draw()
     love.graphics.draw(self.ships, self.qShip, self.x, self.y, self.angle-55, 1, 1, 55/2, 60/2)
+end
+
+function Player:increasePowerUp()
+    self.powerUp:increaseLevel()
+end
+
+function Player:getPowerUpLevel()
+    return self.powerUp:getPowerUpLevel()
+end
+
+function Player:setPowerUpLevel(level)
+    self.powerUp:setLevel(level)
 end
 
 return Player

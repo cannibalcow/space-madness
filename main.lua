@@ -1,6 +1,8 @@
 class = require 'lib.middleclass'
 Tools = require("lib.tools")
 Bullet = require("lib.bullet")
+PowerUpEntity = require("lib.powerupentity")
+PowerUp = require("lib.powerup")
 local Player = require("lib.player")
 local Monster = require("lib.monster")
 
@@ -14,34 +16,36 @@ gameScore = 0
 highScore = 0
 deaths = 0
 
-
 monsterSpawnFrequence = 0.2
 monsterTimer = monsterSpawnFrequence
 
+-- Powerups spawn timer
+powerUpSpawnFrequence = 1
+powerUpTimer = powerUpSpawnFrequence
+powerUpEntity = nil
+
 state = "alive"
-bulletSpeed = 900
 bg = nil
 
 player = nil
 
 function love.load()
-    love.window.setFullscreen(false)
+    love.window.setFullscreen(true)
     love.mouse.setVisible(true)
-
     player = Player:new()
 
     bg = love.graphics.newImage("gfx/bg.jpg")
     ships = love.graphics.newImage("gfx/ships.gif")
     qEnemy = love.graphics.newQuad(130, 130, 55, 55, ships:getWidth(), ships:getHeight())
     crossHair = love.graphics.newImage("gfx/crosshair.png")
-    
+        
     -- Cursor
     cursor = love.mouse.newCursor("gfx/crosshair.png", 0, 0)
     love.mouse.setCursor(cursor)
 
     -- BG music
-    -- bgMusic = love.audio.newSource("sfx/Azureflux_-_05_-_Expedition.mp3")
-    -- bgMusic:play()
+    bgMusic = love.audio.newSource("sfx/Azureflux_-_05_-_Expedition.mp3")
+    bgMusic:play()
 end
 
 function love.draw()
@@ -65,7 +69,7 @@ function love.draw()
     love.graphics.print("Score: " .. gameScore, 25, 25)    
     love.graphics.print("Deaths: " .. deaths, 25, 35)
     love.graphics.print("Highscore: " .. highScore, 25, 45)
-
+    love.graphics.print("PowerupLevel: " .. player:getPowerUpLevel(), 25,55)
     -- Draw player
     player:draw()
 
@@ -78,6 +82,11 @@ function love.draw()
     for i, monster in ipairs(monsters) do
         monster:draw()
     end            
+
+    -- Draw powerUpEntity
+    if powerUpEntity ~= nil then
+        powerUpEntity:draw()
+    end
 
     -- Reset color
     love.graphics.setColor(255,255,255)
@@ -135,6 +144,25 @@ function love.update(dt)
         end
     end
 
+    if powerUpReady(dt) then
+       spawnPowerUp()
+    end
+
+    if powerUpEntity ~= nil then
+        powerUpEntity:update(dt)
+        if powerUpEntity:isOutOfBounds() then
+            powerUpEntity = nil
+        end
+    end
+
+    -- Player powerup collision detection
+    if powerUpEntity ~= nil then
+        if powerUpEntity:isPlayerCollision(player) then
+            powerUpEntity = nil
+            player:increasePowerUp()
+        end
+    end
+
     -- player monster collision detection
     if table.maxn(monsters) > 0 then
         for i, monster in ipairs(monsters) do
@@ -144,7 +172,6 @@ function love.update(dt)
         end
     end
 end
-
 
 function love.keypressed(key, isrepeat)
     if key == "p" then
@@ -163,11 +190,14 @@ function love.mousepressed(x, y, button)
     end
 
     -- shoot
-    pos = table.maxn(bullets)
+   
     local bullet = player:shoot(love.mouse.getX(), love.mouse.getY())
 
     if bullet ~= nil then
-        table.insert(bullets, pos+1, bullet)
+        for i,b in ipairs(bullet) do
+            pos = table.maxn(bullets)
+            table.insert(bullets, pos+1, b)
+        end
     end
 end
 
@@ -177,11 +207,29 @@ function monsterReady(dt)
         monsterTimer = monsterSpawnFrequence
         return true
     end
+    return false
 end
 
 function spawnMonster() 
     table.insert(monsters, Monster:new())
 end
+
+function powerUpReady(dt)
+    powerUpTimer = powerUpTimer - ( 1 * dt)
+    if powerUpTimer < 0 then
+        powerUpTimer = powerUpSpawnFrequence
+        return true
+    end
+    return false
+end
+
+function spawnPowerUp()
+    local y = love.math.random(0, love.window.getHeight())
+    local x = 0
+    if powerUpEntity == nil then
+        powerUpEntity = PowerUpEntity:new()
+    end
+end 
 
 function resetGame()
     state = "play"
@@ -194,6 +242,10 @@ function resetGame()
     for i,bullet in ipairs(bullets) do
         bullets[i] = nil
     end
+
+    powerup = nil
+
+    player:setPowerUpLevel(0)
 end
 
 function score(points)

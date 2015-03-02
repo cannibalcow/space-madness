@@ -48,6 +48,7 @@ function Bullet:isOutOfBounds()
 end
 
 function Bullet:draw()
+  love.graphics.circle("line", self.x, self.y, 8, 2)
   love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
 end
 
